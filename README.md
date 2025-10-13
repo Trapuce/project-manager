@@ -1,172 +1,105 @@
-# ProjectHub - Application de Gestion de Projets
+# ProjectHub
 
-Une application moderne et complète de gestion de projets construite avec Next.js, TypeScript et Tailwind CSS.
+Application de gestion de projet moderne construite avec Next.js, TypeScript et Tailwind CSS.
 
-## 🚀 Fonctionnalités
+## Fonctionnalités
 
-### Authentification
-- **Connexion/Inscription** : Interface sécurisée avec validation des formulaires
-- **Réinitialisation de mot de passe** : Système de récupération de compte
-- **Gestion des sessions** : Authentification persistante
+- **Authentification** : Connexion, inscription et gestion des sessions
+- **Gestion des projets** : Création, modification et suivi des projets
+- **Gestion des tâches** : Création, assignation et suivi des tâches
+- **Gestion des utilisateurs** : Administration des utilisateurs et des rôles
+- **Calendrier** : Visualisation des tâches et projets dans un calendrier
+- **Analytics** : Tableaux de bord et statistiques
+- **Profil utilisateur** : Gestion du profil et des paramètres
 
-### Gestion des Utilisateurs
-- **Profils utilisateurs** : Informations personnelles et préférences
-- **Système de rôles** : Admin, Manager, Membre avec permissions différenciées
-- **Gestion d'équipe** : Vue d'ensemble des membres et leurs statuts
+## Technologies
 
-### Gestion des Projets
-- **CRUD complet** : Création, lecture, mise à jour, suppression
-- **Statuts de projets** : Planifié, En cours, En pause, Terminé, Archivé
-- **Priorités** : Basse, Moyenne, Haute
-- **Assignation d'équipes** : Attribution de membres aux projets
-- **Suivi d'activité** : Historique des modifications
+- **Frontend** : Next.js 14, React, TypeScript
+- **Styling** : Tailwind CSS, shadcn/ui
+- **État** : Zustand
+- **Formulaires** : React Hook Form, Zod
+- **Animations** : Framer Motion
+- **API** : Client API personnalisé
 
-### Gestion des Tâches
-- **Interface complète** : Liste, détail, création, modification
-- **Assignation** : Attribution de tâches aux membres de l'équipe
-- **Sous-tâches** : Décomposition des tâches complexes
-- **Commentaires** : Communication sur les tâches
-- **Pièces jointes** : Upload et gestion de fichiers
-- **Filtres avancés** : Recherche, tri, pagination
+## Installation
 
-### Dashboard & Analytics
-- **Vue d'ensemble** : Métriques clés et statistiques
-- **Graphiques interactifs** : Évolution des projets et tâches
-- **Performance d'équipe** : Suivi de la productivité
-- **Échéances** : Alertes pour les dates limites
-- **Analytics détaillés** : Page dédiée aux analyses approfondies
+1. Cloner le projet
+```bash
+git clone <repository-url>
+cd project-manager
+```
 
-### Calendrier
-- **Vues multiples** : Mois, semaine, jour
-- **Planning des tâches** : Visualisation des échéances
-- **Sidebar interactive** : Détails des tâches du jour sélectionné
-- **Création rapide** : Ajout de tâches directement depuis le calendrier
+2. Installer les dépendances
+```bash
+npm install
+```
 
-### Système de Notifications
-- **Notifications in-app** : Dropdown avec compteur de non-lues
-- **Types variés** : Tâches, projets, équipe
-- **Gestion complète** : Marquer comme lu, supprimer
-- **Horodatage** : Affichage du temps écoulé
+3. Configurer les variables d'environnement
+```bash
+# Créer .env.local
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
 
-### Interface Utilisateur
-- **Design moderne** : Interface épurée avec palette émeraude
-- **Mode sombre/clair** : Basculement automatique ou manuel
-- **Responsive** : Adaptation mobile et desktop
-- **Accessibilité** : Support des lecteurs d'écran et navigation clavier
-- **Animations fluides** : Transitions et micro-interactions
+4. Démarrer le serveur de développement
+```bash
+npm run dev
+```
 
-## 🛠️ Technologies Utilisées
+## Scripts disponibles
 
-- **Framework** : Next.js 14 (App Router)
-- **Langage** : TypeScript
-- **Styling** : Tailwind CSS v4
-- **Composants UI** : shadcn/ui + Radix UI
-- **Graphiques** : Recharts
-- **Dates** : date-fns
-- **Icônes** : Lucide React
-- **Thèmes** : next-themes
-- **Fonts** : Geist Sans & Mono
+- `npm run dev` : Démarrer le serveur de développement
+- `npm run build` : Construire l'application pour la production
+- `npm run start` : Démarrer l'application en production
+- `npm run lint` : Lancer le linter
 
-## 📁 Structure du Projet
+## Structure du projet
 
-\`\`\`
-app/
-├── auth/                    # Pages d'authentification
-│   ├── login/
-│   ├── signup/
-│   └── reset-password/
-├── dashboard/               # Interface principale
-│   ├── analytics/           # Page d'analytics
-│   ├── calendar/            # Vue calendrier
-│   ├── profile/             # Profil utilisateur
-│   ├── projects/            # Gestion des projets
-│   ├── settings/            # Paramètres
-│   ├── tasks/               # Gestion des tâches
-│   └── users/               # Gestion d'équipe
-└── api/                     # Routes API
-    └── upload/              # Upload de fichiers
+```
+├── app/                    # Pages Next.js
+├── components/             # Composants React
+│   ├── ui/                # Composants UI de base
+│   ├── auth/              # Composants d'authentification
+│   ├── dashboard/         # Composants du tableau de bord
+│   ├── projects/          # Composants de gestion des projets
+│   ├── tasks/             # Composants de gestion des tâches
+│   └── users/             # Composants de gestion des utilisateurs
+├── lib/                   # Utilitaires et configuration
+│   ├── api/               # Client API et services
+│   ├── validations/       # Schémas de validation Zod
+│   └── utils.ts           # Fonctions utilitaires
+├── stores/                # Stores Zustand
+└── hooks/                 # Hooks React personnalisés
+```
 
-components/
-├── analytics/               # Composants d'analytics
-├── auth/                    # Formulaires d'authentification
-├── calendar/                # Composants du calendrier
-├── dashboard/               # Navigation et header
-├── profile/                 # Composants de profil
-├── projects/                # Composants de projets
-├── tasks/                   # Composants de tâches
-├── ui/                      # Composants UI de base
-└── users/                   # Composants utilisateurs
-\`\`\`
+## API Backend
 
-## 🎨 Design System
+L'application se connecte à un backend Spring Boot via les endpoints suivants :
 
-### Palette de Couleurs
-- **Primaire** : Émeraude (#10b981)
-- **Secondaire** : Gris neutres
-- **Accents** : Bleu, rouge, jaune pour les statuts
+- **Authentification** : `/api/auth/*`
+- **Utilisateurs** : `/api/users/*`
+- **Projets** : `/api/projects/*`
+- **Tâches** : `/api/tasks/*`
+- **Fichiers** : `/api/files/*`
 
-### Typographie
-- **Titres** : Geist Sans (weights: 400, 500, 600, 700)
-- **Corps** : Geist Sans (weight: 400)
-- **Code** : Geist Mono
+## Déploiement
 
-### Composants
-- **Cartes** : Bordures subtiles, ombres légères
-- **Boutons** : États hover/focus, variants multiples
-- **Formulaires** : Validation en temps réel, états d'erreur
-- **Navigation** : Sidebar fixe, breadcrumbs contextuels
+1. Construire l'application
+```bash
+npm run build
+```
 
-## 🚀 Démarrage Rapide
+2. Démarrer en production
+```bash
+npm run start
+```
 
-1. **Installation des dépendances**
-   \`\`\`bash
-   npm install
-   \`\`\`
+## Contribution
 
-2. **Lancement en développement**
-   \`\`\`bash
-   npm run dev
-   \`\`\`
+1. Fork le projet
+2. Créer une branche feature
+3. Commit les changements
+4. Push vers la branche
+5. Ouvrir une Pull Request
 
-3. **Accès à l'application**
-   - Ouvrir [http://localhost:3000](http://localhost:3000)
-   - Page d'accueil avec liens vers l'authentification
-   - Dashboard accessible après connexion
 
-## 📱 Fonctionnalités Responsive
 
-- **Mobile First** : Design optimisé pour mobile
-- **Breakpoints** : sm (640px), md (768px), lg (1024px), xl (1280px)
-- **Navigation adaptative** : Sidebar collapsible sur mobile
-- **Grilles flexibles** : Adaptation automatique du contenu
-- **Touch-friendly** : Boutons et zones de clic optimisés
-
-## 🔧 Personnalisation
-
-### Thèmes
-- Modification des couleurs dans `app/globals.css`
-- Variables CSS personnalisées pour les thèmes
-- Support automatique du mode sombre
-
-### Composants
-- Tous les composants sont modulaires et réutilisables
-- Props TypeScript pour une intégration type-safe
-- Variants configurables via class-variance-authority
-
-## 📊 Métriques et Analytics
-
-- **Projets** : Nombre total, statuts, progression
-- **Tâches** : Répartition par statut, assignation, échéances
-- **Équipe** : Performance, charge de travail, activité
-- **Tendances** : Évolution temporelle, graphiques interactifs
-
-## 🔒 Sécurité
-
-- **Validation** : Côté client et serveur
-- **Sanitisation** : Nettoyage des entrées utilisateur
-- **Authentification** : Gestion sécurisée des sessions
-- **Permissions** : Contrôle d'accès basé sur les rôles
-
----
-
-**ProjectHub** - Gérez vos projets avec efficacité et style ! 🎯

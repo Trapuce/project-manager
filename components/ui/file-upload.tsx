@@ -4,7 +4,7 @@ import { useState, useCallback } from "react"
 import { useDropzone } from "react-dropzone"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { useToast } from "@/hooks/use-toast"
+import { actionToast } from "@/components/ui/action-toast"
 import { Upload, X, File, ImageIcon, FileText, Archive } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -47,7 +47,6 @@ export function FileUpload({
   className,
 }: FileUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-  const { toast } = useToast()
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -111,11 +110,7 @@ export function FileUpload({
     onDropRejected: (rejectedFiles) => {
       rejectedFiles.forEach((rejection) => {
         const errors = rejection.errors.map((error) => error.message).join(", ")
-        toast({
-          title: "Fichier rejeté",
-          description: `${rejection.file.name}: ${errors}`,
-          variant: "destructive",
-        })
+        actionToast.error(`Fichier rejeté: ${rejection.file.name} - ${errors}`)
       })
     },
   })

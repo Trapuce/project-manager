@@ -1,25 +1,44 @@
 import { apiClient } from './client';
 import { API_CONFIG } from './config';
 import type {
-  File,
+  FileAttachment,
   FileUploadRequest,
   ApiResponse,
+  PaginatedResponse,
   SearchParams,
 } from './config';
 
 export class FilesService {
+  // Obtenir les fichiers d'un projet
+  async getFilesByProject(projectId: number, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.BY_PROJECT(projectId),
+      params
+    );
+    return response.data;
+  }
+
+  // Obtenir les fichiers d'une tâche
+  async getFilesByTask(taskId: number, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.BY_TASK(taskId),
+      params
+    );
+    return response.data;
+  }
+
+  // Rechercher des fichiers
+  async searchFiles(query: string, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const searchParams = { ...params, search: query };
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.SEARCH,
+      searchParams
+    );
+    return response.data;
+  }
+
   // Uploader un fichier
-  async uploadFile(file: globalThis.File, projectId?: number, taskId?: number): Promise<File> {
-    // Vérifier la taille du fichier
-    if (file.size > API_CONFIG.MAX_FILE_SIZE) {
-      throw new Error(`File size exceeds maximum allowed size of ${API_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`);
-    }
-
-    // Vérifier le type de fichier
-    if (!API_CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
-      throw new Error(`File type ${file.type} is not allowed`);
-    }
-
+  async uploadFile(file: File, projectId?: number, taskId?: number): Promise<FileAttachment> {
     const formData = new FormData();
     formData.append('file', file);
     
@@ -31,16 +50,35 @@ export class FilesService {
       formData.append('taskId', taskId.toString());
     }
 
-    const response: ApiResponse<File> = await apiClient.uploadFile(
+    const response: ApiResponse<FileAttachment> = await apiClient.uploadFile(
       API_CONFIG.ENDPOINTS.FILES.UPLOAD,
       formData
     );
     return response.data;
   }
 
+  // Uploader une image de profil
+  async uploadProfileImage(file: File): Promise<FileAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'profile');
+
+    const response: ApiResponse<FileAttachment> = await apiClient.uploadFile(
+      API_CONFIG.ENDPOINTS.FILES.UPLOAD,
+      formData
+    );
+    return response.data;
+  }
+
+  // Uploader plusieurs fichiers
+  async uploadMultipleFiles(files: File[], projectId?: number, taskId?: number): Promise<FileAttachment[]> {
+    const uploadPromises = files.map(file => this.uploadFile(file, projectId, taskId));
+    return Promise.all(uploadPromises);
+  }
+
   // Télécharger un fichier
   async downloadFile(fileId: number): Promise<Blob> {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.FILES.DOWNLOAD}/${fileId}`, {
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.FILES.DOWNLOAD(fileId)}`, {
       headers: {
         'Authorization': `Bearer ${apiClient.getAccessToken()}`,
       },
@@ -53,114 +91,103 @@ export class FilesService {
     return response.blob();
   }
 
-  // Télécharger un fichier et l'ouvrir dans un nouvel onglet
-  async downloadAndOpenFile(fileId: number, fileName: string): Promise<void> {
-    const blob = await this.downloadFile(fileId);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
+  // Obtenir l'URL de téléchargement d'un fichier
+  getDownloadUrl(fileId: number): string {
+    return `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.FILES.DOWNLOAD(fileId)}`;
   }
 
-  // Récupérer les fichiers d'un projet
-  async getProjectFiles(projectId: number, params?: SearchParams): Promise<File[]> {
-    const response: ApiResponse<File[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.FILES.PROJECT}/${projectId}`,
-      params
-    );
-    return response.data;
+  // Supprimer un fichier
+  async deleteFile(fileId: number): Promise<void> {
+    await apiClient.delete(`/api/files/${fileId}`);
   }
 
-  // Récupérer les fichiers d'une tâche
-  async getTaskFiles(taskId: number, params?: SearchParams): Promise<File[]> {
-    const response: ApiResponse<File[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.FILES.TASK}/${taskId}`,
-      params
-    );
-    return response.data;
-  }
-
-  // Rechercher des fichiers
-  async searchFiles(searchTerm: string, params?: SearchParams): Promise<File[]> {
-    const searchParams = { search: searchTerm, ...params };
-    const response: ApiResponse<File[]> = await apiClient.get(
+  // Obtenir les fichiers par type
+  async getFilesByType(contentType: string, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const searchParams = { ...params, contentType };
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
       API_CONFIG.ENDPOINTS.FILES.SEARCH,
       searchParams
     );
     return response.data;
   }
 
-  // Récupérer les fichiers par type MIME
-  async getFilesByContentType(contentType: string): Promise<File[]> {
-    const response: ApiResponse<File[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.FILES.CONTENT_TYPE}/${encodeURIComponent(contentType)}`
+  // Obtenir les fichiers par taille
+  async getFilesBySize(minSize?: number, maxSize?: number, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const searchParams = { ...params };
+    if (minSize !== undefined) searchParams.minSize = minSize;
+    if (maxSize !== undefined) searchParams.maxSize = maxSize;
+    
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.SEARCH,
+      searchParams
     );
     return response.data;
   }
 
-  // Récupérer la taille totale des fichiers d'un projet
-  async getProjectFilesSize(projectId: number): Promise<{ totalSize: number; fileCount: number }> {
-    const response: ApiResponse<{ totalSize: number; fileCount: number }> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.FILES.PROJECT}/${projectId}/size`
+  // Obtenir les fichiers récents
+  async getRecentFiles(limit: number = 10): Promise<FileAttachment[]> {
+    const response: ApiResponse<FileAttachment[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.SEARCH,
+      { limit, sort: 'uploadedAt,desc' }
     );
     return response.data;
   }
 
-  // Supprimer un fichier
-  async deleteFile(fileId: number): Promise<void> {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.FILES.DOWNLOAD.replace('/download', '')}/${fileId}`);
+  // Obtenir les fichiers par utilisateur
+  async getFilesByUser(userId: number, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const searchParams = { ...params, uploadedBy: userId };
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.SEARCH,
+      searchParams
+    );
+    return response.data;
   }
 
-  // Méthodes utilitaires
-  async getImageFiles(projectId?: number, taskId?: number): Promise<File[]> {
-    const imageTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    const files: File[] = [];
-    
-    for (const contentType of imageTypes) {
-      const typeFiles = await this.getFilesByContentType(contentType);
-      files.push(...typeFiles);
-    }
-
-    // Filtrer par projet ou tâche si spécifié
-    if (projectId) {
-      return files.filter(file => file.project?.id === projectId);
-    }
-    
-    if (taskId) {
-      return files.filter(file => file.task?.id === taskId);
-    }
-
-    return files;
+  // Obtenir les fichiers par date
+  async getFilesByDateRange(startDate: string, endDate: string, params?: SearchParams): Promise<PaginatedResponse<FileAttachment>> {
+    const searchParams = { ...params, startDate, endDate };
+    const response: ApiResponse<PaginatedResponse<FileAttachment>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.FILES.SEARCH,
+      searchParams
+    );
+    return response.data;
   }
 
-  async getDocumentFiles(projectId?: number, taskId?: number): Promise<File[]> {
+  // Obtenir les statistiques des fichiers
+  async getFileStats(): Promise<{
+    totalFiles: number;
+    totalSize: number;
+    filesByType: Record<string, number>;
+    filesByProject: Record<number, number>;
+  }> {
+    const response: ApiResponse<{
+      totalFiles: number;
+      totalSize: number;
+      filesByType: Record<string, number>;
+      filesByProject: Record<number, number>;
+    }> = await apiClient.get('/api/files/stats');
+    return response.data;
+  }
+
+  // Vérifier si un fichier est une image
+  isImageFile(file: File): boolean {
+    return file.type.startsWith('image/');
+  }
+
+  // Vérifier si un fichier est un document
+  isDocumentFile(file: File): boolean {
     const documentTypes = [
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'text/csv'
     ];
-    const files: File[] = [];
-    
-    for (const contentType of documentTypes) {
-      const typeFiles = await this.getFilesByContentType(contentType);
-      files.push(...typeFiles);
-    }
-
-    // Filtrer par projet ou tâche si spécifié
-    if (projectId) {
-      return files.filter(file => file.project?.id === projectId);
-    }
-    
-    if (taskId) {
-      return files.filter(file => file.task?.id === taskId);
-    }
-
-    return files;
+    return documentTypes.includes(file.type);
   }
 
   // Formater la taille d'un fichier
@@ -176,33 +203,16 @@ export class FilesService {
 
   // Obtenir l'icône d'un fichier basée sur son type
   getFileIcon(contentType: string): string {
-    if (contentType.startsWith('image/')) {
-      return '🖼️';
-    } else if (contentType === 'application/pdf') {
-      return '📄';
-    } else if (contentType.includes('word') || contentType.includes('document')) {
-      return '📝';
-    } else if (contentType === 'text/plain') {
-      return '📄';
-    } else {
-      return '📎';
-    }
-  }
-
-  // Vérifier si un fichier est une image
-  isImageFile(contentType: string): boolean {
-    return contentType.startsWith('image/');
-  }
-
-  // Vérifier si un fichier est un document
-  isDocumentFile(contentType: string): boolean {
-    const documentTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-    return documentTypes.includes(contentType);
+    if (contentType.startsWith('image/')) return '🖼️';
+    if (contentType.includes('pdf')) return '📄';
+    if (contentType.includes('word')) return '📝';
+    if (contentType.includes('excel') || contentType.includes('spreadsheet')) return '📊';
+    if (contentType.includes('powerpoint') || contentType.includes('presentation')) return '📈';
+    if (contentType.includes('text')) return '📃';
+    if (contentType.includes('video')) return '🎥';
+    if (contentType.includes('audio')) return '🎵';
+    if (contentType.includes('zip') || contentType.includes('rar')) return '📦';
+    return '📎';
   }
 }
 

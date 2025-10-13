@@ -2,29 +2,48 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, Download } from "lucide-react"
-import { CreateTaskDialog } from "./create-task-dialog"
+import { Plus, Grid, List } from "lucide-react"
+import { CreateTaskDialog } from "./create-task-dialog-simple"
 
-export function TasksHeader() {
+interface TasksHeaderProps {
+  viewMode: "grid" | "list"
+  onViewModeChange: (mode: "grid" | "list") => void
+}
+
+export function TasksHeader({ viewMode, onViewModeChange }: TasksHeaderProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
+  const handleTaskCreated = () => {
+    setIsCreateDialogOpen(false)
+    // Le store se met à jour automatiquement
+  }
 
   return (
     <>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestion des tâches</h1>
-          <p className="text-muted-foreground">Organisez et suivez toutes vos tâches en un seul endroit</p>
+          <h1 className="text-3xl font-bold tracking-tight">Tâches</h1>
+          <p className="text-muted-foreground">Gérez toutes vos tâches et leur progression</p>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Rechercher une tâche..." className="pl-10 w-64" />
+          <div className="flex items-center border rounded-md">
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => onViewModeChange("grid")}
+              className="rounded-r-none"
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => onViewModeChange("list")}
+              className="rounded-l-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exporter
-          </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Nouvelle tâche
@@ -32,7 +51,11 @@ export function TasksHeader() {
         </div>
       </div>
 
-      <CreateTaskDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateTaskDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        onTaskCreated={handleTaskCreated}
+      />
     </>
   )
 }

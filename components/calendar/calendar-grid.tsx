@@ -1,4 +1,6 @@
 "use client"
+
+import { useState, useEffect } from "react"
 import {
   format,
   startOfMonth,
@@ -9,10 +11,18 @@ import {
   isToday,
   startOfWeek,
   endOfWeek,
+  addDays,
+  subDays,
+  startOfDay,
+  endOfDay,
 } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { CalendarTask } from "./calendar-task"
+import { tasksService } from "@/lib/api"
+import { useTasksStore } from "@/stores/tasks-store"
+import { enhancedToast } from "@/components/ui/enhanced-toast"
+import type { Task } from "@/lib/api"
 
 interface CalendarGridProps {
   selectedDate: Date
@@ -20,45 +30,82 @@ interface CalendarGridProps {
   onDateSelect: (date: Date) => void
 }
 
-// Mock data pour les tâches
-const mockTasks = [
-  {
-    id: "1",
-    title: "Révision du design",
-    project: "Site Web",
-    priority: "high" as const,
-    dueDate: new Date(2024, 11, 15),
-    assignee: { name: "Marie Dubois", avatar: "/placeholder.svg?height=24&width=24" },
-  },
-  {
-    id: "2",
-    title: "Réunion équipe",
-    project: "App Mobile",
-    priority: "medium" as const,
-    dueDate: new Date(2024, 11, 16),
-    assignee: { name: "Pierre Martin", avatar: "/placeholder.svg?height=24&width=24" },
-  },
-  {
-    id: "3",
-    title: "Tests utilisateurs",
-    project: "Dashboard",
-    priority: "low" as const,
-    dueDate: new Date(2024, 11, 18),
-    assignee: { name: "Sophie Chen", avatar: "/placeholder.svg?height=24&width=24" },
-  },
-]
-
 export function CalendarGrid({ selectedDate, viewMode, onDateSelect }: CalendarGridProps) {
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { loadTasks: refreshTasks } = useTasksStore()
+
+  useEffect(() => {
+    loadTasks()
+  }, [])
+
+  const loadTasks = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const response = await tasksService.getAllTasks({ page: 0, size: 1000 })
+      setTasks(response.content || [])
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erreur lors du chargement des tâches'
+      setError(errorMessage)
+      enhancedToast.error('Erreur lors du chargement des tâches', {
+        description: errorMessage
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const getTasksForDate = (date: Date) => {
+    return tasks.filter((task) => {
+      const taskDate = new Date(task.dueDate)
+      return isSameDay(taskDate, date)
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button 
+            onClick={loadTasks}
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90"
+          >
+            Réessayer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (viewMode === "month") {
-    return <MonthView selectedDate={selectedDate} onDateSelect={onDateSelect} />
+    return <MonthView selectedDate={selectedDate} onDateSelect={onDateSelect} getTasksForDate={getTasksForDate} />
   } else if (viewMode === "week") {
-    return <WeekView selectedDate={selectedDate} onDateSelect={onDateSelect} />
+    return <WeekView selectedDate={selectedDate} onDateSelect={onDateSelect} getTasksForDate={getTasksForDate} />
   } else {
-    return <DayView selectedDate={selectedDate} onDateSelect={onDateSelect} />
+    return <DayView selectedDate={selectedDate} onDateSelect={onDateSelect} getTasksForDate={getTasksForDate} />
   }
 }
 
-function MonthView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateSelect: (date: Date) => void }) {
+function MonthView({ 
+  selectedDate, 
+  onDateSelect, 
+  getTasksForDate 
+}: { 
+  selectedDate: Date
+  onDateSelect: (date: Date) => void
+  getTasksForDate: (date: Date) => Task[]
+}) {
   const monthStart = startOfMonth(selectedDate)
   const monthEnd = endOfMonth(selectedDate)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 })
@@ -66,10 +113,6 @@ function MonthView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateS
 
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   const weekDays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-
-  const getTasksForDate = (date: Date) => {
-    return mockTasks.filter((task) => isSameDay(task.dueDate, date))
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -101,7 +144,9 @@ function MonthView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateS
               )}
               onClick={() => onDateSelect(day)}
             >
-              <div className={cn("text-sm font-medium mb-1", isCurrentDay && "text-primary")}>{format(day, "d")}</div>
+              <div className={cn("text-sm font-medium mb-1", isCurrentDay && "text-primary")}>
+                {format(day, "d")}
+              </div>
               <div className="space-y-1">
                 {tasksForDay.slice(0, 3).map((task) => (
                   <CalendarTask key={task.id} task={task} compact />
@@ -118,14 +163,18 @@ function MonthView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateS
   )
 }
 
-function WeekView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateSelect: (date: Date) => void }) {
+function WeekView({ 
+  selectedDate, 
+  onDateSelect, 
+  getTasksForDate 
+}: { 
+  selectedDate: Date
+  onDateSelect: (date: Date) => void
+  getTasksForDate: (date: Date) => Task[]
+}) {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 })
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd })
-
-  const getTasksForDate = (date: Date) => {
-    return mockTasks.filter((task) => isSameDay(task.dueDate, date))
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -141,7 +190,9 @@ function WeekView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateSe
             onClick={() => onDateSelect(day)}
           >
             <div className="text-sm text-muted-foreground">{format(day, "EEE", { locale: fr })}</div>
-            <div className={cn("text-lg font-semibold", isToday(day) && "text-primary")}>{format(day, "d")}</div>
+            <div className={cn("text-lg font-semibold", isToday(day) && "text-primary")}>
+              {format(day, "d")}
+            </div>
           </div>
         ))}
       </div>
@@ -163,14 +214,24 @@ function WeekView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateSe
   )
 }
 
-function DayView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateSelect: (date: Date) => void }) {
-  const tasksForDay = mockTasks.filter((task) => isSameDay(task.dueDate, selectedDate))
+function DayView({ 
+  selectedDate, 
+  onDateSelect, 
+  getTasksForDate 
+}: { 
+  selectedDate: Date
+  onDateSelect: (date: Date) => void
+  getTasksForDate: (date: Date) => Task[]
+}) {
+  const tasksForDay = getTasksForDate(selectedDate)
   const hours = Array.from({ length: 24 }, (_, i) => i)
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">{format(selectedDate, "EEEE dd MMMM yyyy", { locale: fr })}</h2>
+        <h2 className="text-lg font-semibold">
+          {format(selectedDate, "EEEE dd MMMM yyyy", { locale: fr })}
+        </h2>
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -180,17 +241,24 @@ function DayView({ selectedDate, onDateSelect }: { selectedDate: Date; onDateSel
               <div className="w-16 p-2 text-sm text-muted-foreground text-right">
                 {hour.toString().padStart(2, "0")}:00
               </div>
-              <div className="flex-1 p-2 min-h-[60px]">{/* Ici on pourrait afficher les tâches par heure */}</div>
+              <div className="flex-1 p-2 min-h-[60px]">
+                {/* Ici on pourrait afficher les tâches par heure si on avait des heures spécifiques */}
+              </div>
             </div>
           ))}
         </div>
 
         <div className="p-4">
-          <h3 className="font-medium mb-3">Tâches du jour</h3>
+          <h3 className="font-medium mb-3">Tâches du jour ({tasksForDay.length})</h3>
           <div className="space-y-2">
             {tasksForDay.map((task) => (
               <CalendarTask key={task.id} task={task} detailed />
             ))}
+            {tasksForDay.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                Aucune tâche prévue pour cette date
+              </div>
+            )}
           </div>
         </div>
       </div>

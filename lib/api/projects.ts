@@ -2,18 +2,17 @@ import { apiClient } from './client';
 import { API_CONFIG } from './config';
 import type {
   Project,
+  ProjectStats,
   CreateProjectRequest,
   UpdateProjectRequest,
-  ProjectStats,
   ApiResponse,
   PaginatedResponse,
   SearchParams,
-  DateRangeParams,
 } from './config';
 
 export class ProjectsService {
-  // Récupérer tous les projets (paginé)
-  async getProjects(params?: SearchParams): Promise<PaginatedResponse<Project>> {
+  // Obtenir tous les projets (Admin seulement)
+  async getAllProjects(params?: SearchParams): Promise<PaginatedResponse<Project>> {
     const response: ApiResponse<PaginatedResponse<Project>> = await apiClient.get(
       API_CONFIG.ENDPOINTS.PROJECTS.BASE,
       params
@@ -21,7 +20,15 @@ export class ProjectsService {
     return response.data;
   }
 
-  // Récupérer les projets de l'utilisateur connecté
+  // Obtenir un projet par ID
+  async getProjectById(id: number): Promise<Project> {
+    const response: ApiResponse<Project> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BY_ID(id)
+    );
+    return response.data;
+  }
+
+  // Obtenir mes projets (pour les membres)
   async getMyProjects(params?: SearchParams): Promise<PaginatedResponse<Project>> {
     const response: ApiResponse<PaginatedResponse<Project>> = await apiClient.get(
       API_CONFIG.ENDPOINTS.PROJECTS.MY_PROJECTS,
@@ -30,58 +37,7 @@ export class ProjectsService {
     return response.data;
   }
 
-  // Récupérer un projet par ID
-  async getProjectById(id: number): Promise<Project> {
-    const response: ApiResponse<Project> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.BASE}/${id}`
-    );
-    return response.data;
-  }
-
-  // Rechercher des projets
-  async searchProjects(searchTerm: string, params?: SearchParams): Promise<PaginatedResponse<Project>> {
-    const searchParams = { search: searchTerm, ...params };
-    const response: ApiResponse<PaginatedResponse<Project>> = await apiClient.get(
-      API_CONFIG.ENDPOINTS.PROJECTS.SEARCH,
-      searchParams
-    );
-    return response.data;
-  }
-
-  // Récupérer les projets par statut
-  async getProjectsByStatus(status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED'): Promise<Project[]> {
-    const response: ApiResponse<Project[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.STATUS}/${status}`
-    );
-    return response.data;
-  }
-
-  // Récupérer les projets par priorité
-  async getProjectsByPriority(priority: 'LOW' | 'MEDIUM' | 'HIGH'): Promise<Project[]> {
-    const response: ApiResponse<Project[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.PRIORITY}/${priority}`
-    );
-    return response.data;
-  }
-
-  // Récupérer les projets par plage de dates
-  async getProjectsByDateRange(dateRange: DateRangeParams): Promise<Project[]> {
-    const response: ApiResponse<Project[]> = await apiClient.get(
-      API_CONFIG.ENDPOINTS.PROJECTS.DUE_DATE,
-      dateRange
-    );
-    return response.data;
-  }
-
-  // Récupérer les projets en retard
-  async getOverdueProjects(): Promise<Project[]> {
-    const response: ApiResponse<Project[]> = await apiClient.get(
-      API_CONFIG.ENDPOINTS.PROJECTS.OVERDUE
-    );
-    return response.data;
-  }
-
-  // Créer un nouveau projet
+  // Créer un nouveau projet (Manager/Admin)
   async createProject(projectData: CreateProjectRequest): Promise<Project> {
     const response: ApiResponse<Project> = await apiClient.post(
       API_CONFIG.ENDPOINTS.PROJECTS.BASE,
@@ -93,42 +49,28 @@ export class ProjectsService {
   // Mettre à jour un projet
   async updateProject(id: number, projectData: UpdateProjectRequest): Promise<Project> {
     const response: ApiResponse<Project> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.BASE}/${id}`,
+      API_CONFIG.ENDPOINTS.PROJECTS.BY_ID(id),
       projectData
-    );
-    return response.data;
-  }
-
-  // Changer le statut d'un projet
-  async updateProjectStatus(id: number, status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED'): Promise<Project> {
-    const response: ApiResponse<Project> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.BASE}/${id}/status?status=${status}`
-    );
-    return response.data;
-  }
-
-  // Ajouter un membre au projet
-  async addProjectMember(projectId: number, userId: number): Promise<Project> {
-    const response: ApiResponse<Project> = await apiClient.post(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.BASE}/${projectId}/members/${userId}`
-    );
-    return response.data;
-  }
-
-  // Retirer un membre du projet
-  async removeProjectMember(projectId: number, userId: number): Promise<Project> {
-    const response: ApiResponse<Project> = await apiClient.delete(
-      `${API_CONFIG.ENDPOINTS.PROJECTS.BASE}/${projectId}/members/${userId}`
     );
     return response.data;
   }
 
   // Supprimer un projet
   async deleteProject(id: number): Promise<void> {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.PROJECTS.BASE}/${id}`);
+    await apiClient.delete(API_CONFIG.ENDPOINTS.PROJECTS.BY_ID(id));
   }
 
-  // Récupérer les statistiques des projets
+  // Rechercher des projets
+  async searchProjects(query: string, params?: SearchParams): Promise<PaginatedResponse<Project>> {
+    const searchParams = { ...params, query };
+    const response: ApiResponse<PaginatedResponse<Project>> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.SEARCH,
+      searchParams
+    );
+    return response.data;
+  }
+
+  // Obtenir les statistiques des projets
   async getProjectStats(): Promise<ProjectStats> {
     const response: ApiResponse<ProjectStats> = await apiClient.get(
       API_CONFIG.ENDPOINTS.PROJECTS.STATS
@@ -136,37 +78,75 @@ export class ProjectsService {
     return response.data;
   }
 
-  // Méthodes utilitaires
-  async getTodoProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('TODO');
+  // Ajouter un membre à un projet
+  async addMemberToProject(projectId: number, userId: number): Promise<Project> {
+    const response: ApiResponse<Project> = await apiClient.post(
+      `${API_CONFIG.ENDPOINTS.PROJECTS.BY_ID(projectId)}/members`,
+      { userId }
+    );
+    return response.data;
   }
 
-  async getInProgressProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('IN_PROGRESS');
+  // Retirer un membre d'un projet
+  async removeMemberFromProject(projectId: number, userId: number): Promise<Project> {
+    const response: ApiResponse<Project> = await apiClient.delete(
+      `${API_CONFIG.ENDPOINTS.PROJECTS.BY_ID(projectId)}/members/${userId}`
+    );
+    return response.data;
   }
 
-  async getOnHoldProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('ON_HOLD');
+  // Obtenir les projets par statut
+  async getProjectsByStatus(status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING'): Promise<Project[]> {
+    const response: ApiResponse<Project[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BASE,
+      { status }
+    );
+    return response.data;
   }
 
-  async getCompletedProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('COMPLETED');
+  // Obtenir les projets par priorité
+  async getProjectsByPriority(priority: 'LOW' | 'MEDIUM' | 'HIGH'): Promise<Project[]> {
+    const response: ApiResponse<Project[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BASE,
+      { priority }
+    );
+    return response.data;
   }
 
-  async getArchivedProjects(): Promise<Project[]> {
-    return this.getProjectsByStatus('ARCHIVED');
+  // Obtenir les projets en retard
+  async getOverdueProjects(): Promise<Project[]> {
+    const response: ApiResponse<Project[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BASE,
+      { overdue: true }
+    );
+    return response.data;
   }
 
-  async getHighPriorityProjects(): Promise<Project[]> {
-    return this.getProjectsByPriority('HIGH');
+  // Obtenir les projets récents
+  async getRecentProjects(limit: number = 10): Promise<Project[]> {
+    const response: ApiResponse<Project[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BASE,
+      { limit, sort: 'createdAt,desc' }
+    );
+    return response.data;
   }
 
-  async getMediumPriorityProjects(): Promise<Project[]> {
-    return this.getProjectsByPriority('MEDIUM');
+  // Obtenir les projets par propriétaire
+  async getProjectsByOwner(ownerId: number): Promise<Project[]> {
+    const response: ApiResponse<Project[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BASE,
+      { ownerId }
+    );
+    return response.data;
   }
 
-  async getLowPriorityProjects(): Promise<Project[]> {
-    return this.getProjectsByPriority('LOW');
+  // Obtenir les projets par membre
+  async getProjectsByMember(memberId: number): Promise<Project[]> {
+    const response: ApiResponse<Project[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.PROJECTS.BASE,
+      { memberId }
+    );
+    return response.data;
   }
 }
 

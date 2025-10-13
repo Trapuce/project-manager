@@ -2,13 +2,21 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, Search, Filter, Grid, List } from "lucide-react"
-import { CreateProjectDialog } from "./create-project-dialog"
+import { Plus, Grid, List } from "lucide-react"
+import { CreateProjectDialog } from "./create-project-dialog-form"
 
-export function ProjectsHeader() {
+interface ProjectsHeaderProps {
+  viewMode: "grid" | "list"
+  onViewModeChange: (mode: "grid" | "list") => void
+}
+
+export function ProjectsHeader({ viewMode, onViewModeChange }: ProjectsHeaderProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  const handleProjectCreated = () => {
+    setIsCreateDialogOpen(false)
+    // Le store se met à jour automatiquement
+  }
 
   return (
     <>
@@ -18,19 +26,11 @@ export function ProjectsHeader() {
           <p className="text-muted-foreground">Gérez tous vos projets en cours et archivés</p>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Rechercher un projet..." className="pl-10 w-64" />
-          </div>
-          <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
-            Filtrer
-          </Button>
           <div className="flex items-center border rounded-md">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="sm"
-              onClick={() => setViewMode("grid")}
+              onClick={() => onViewModeChange("grid")}
               className="rounded-r-none"
             >
               <Grid className="h-4 w-4" />
@@ -38,7 +38,7 @@ export function ProjectsHeader() {
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="sm"
-              onClick={() => setViewMode("list")}
+              onClick={() => onViewModeChange("list")}
               className="rounded-l-none"
             >
               <List className="h-4 w-4" />
@@ -51,7 +51,11 @@ export function ProjectsHeader() {
         </div>
       </div>
 
-      <CreateProjectDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateProjectDialog 
+        open={isCreateDialogOpen} 
+        onOpenChange={setIsCreateDialogOpen}
+        onProjectCreated={handleProjectCreated}
+      />
     </>
   )
 }

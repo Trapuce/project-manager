@@ -5,52 +5,41 @@ export const API_CONFIG = {
   BASE_URL: APP_CONFIG.API_URL,
   ENDPOINTS: {
     AUTH: {
-      REGISTER: '/api/auth/register',
       LOGIN: '/api/auth/login',
+      REGISTER: '/api/auth/register',
       REFRESH: '/api/auth/refresh',
       LOGOUT: '/api/auth/logout',
+      CHANGE_PASSWORD: '/api/auth/change-password',
     },
     USERS: {
       BASE: '/api/users',
       PROFILE: '/api/users/profile',
+      BY_ID: (id: number) => `/api/users/${id}`,
       SEARCH: '/api/users/search',
-      STATUS: '/api/users/status',
-      ROLE: '/api/users/role',
-      DEPARTMENT: '/api/users/department',
-      PROJECT: '/api/users/project',
       STATS: '/api/users/stats',
+      CHANGE_PASSWORD: '/api/users/change-password',
     },
     PROJECTS: {
       BASE: '/api/projects',
-      MY_PROJECTS: '/api/projects/my-projects',
+      BY_ID: (id: number) => `/api/projects/${id}`,
+      MY_PROJECTS: '/api/projects/my',
       SEARCH: '/api/projects/search',
-      STATUS: '/api/projects/status',
-      PRIORITY: '/api/projects/priority',
-      DUE_DATE: '/api/projects/due-date',
-      OVERDUE: '/api/projects/overdue',
       STATS: '/api/projects/stats',
     },
     TASKS: {
       BASE: '/api/tasks',
-      MY_TASKS: '/api/tasks/my-tasks',
-      PROJECT: '/api/tasks/project',
+      BY_ID: (id: number) => `/api/tasks/${id}`,
+      MY_TASKS: '/api/tasks/my',
+      BY_PROJECT: (projectId: number) => `/api/tasks/project/${projectId}`,
       SEARCH: '/api/tasks/search',
-      STATUS: '/api/tasks/status',
-      PRIORITY: '/api/tasks/priority',
-      DUE_DATE: '/api/tasks/due-date',
-      OVERDUE: '/api/tasks/overdue',
-      ROOT: '/api/tasks/root',
-      SUBTASKS: '/api/tasks/subtasks',
       STATS: '/api/tasks/stats',
     },
     FILES: {
       UPLOAD: '/api/files/upload',
-      DOWNLOAD: '/api/files/download',
-      PROJECT: '/api/files/project',
-      TASK: '/api/files/task',
+      BY_PROJECT: (projectId: number) => `/api/files/project/${projectId}`,
+      BY_TASK: (taskId: number) => `/api/files/task/${taskId}`,
       SEARCH: '/api/files/search',
-      CONTENT_TYPE: '/api/files/content-type',
-      SIZE: '/api/files/size',
+      DOWNLOAD: (fileId: number) => `/api/files/download/${fileId}`,
     },
   },
   MAX_FILE_SIZE: APP_CONFIG.MAX_FILE_SIZE,
@@ -103,8 +92,6 @@ export interface RegisterRequest {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
   user: User;
 }
 
@@ -118,10 +105,11 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  phone?: string;
-  department?: string;
   role: 'ADMIN' | 'MANAGER' | 'MEMBER';
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+  avatar?: string;
+  phone?: string;
+  department?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -141,23 +129,25 @@ export interface ChangePasswordRequest {
 export interface Project {
   id: number;
   name: string;
-  description?: string;
+  description: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED';
-  startDate?: string;
-  dueDate?: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING';
+  startDate: string;
+  dueDate: string;
+  owner: User;
+  members: User[];
+  tasks: Task[];
+  files: FileAttachment[];
   createdAt: string;
   updatedAt: string;
-  createdBy: User;
-  members: User[];
 }
 
 export interface CreateProjectRequest {
   name: string;
-  description?: string;
+  description: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  startDate?: string;
-  dueDate?: string;
+  startDate: string;
+  dueDate: string;
   memberIds?: number[];
 }
 
@@ -173,30 +163,33 @@ export interface UpdateProjectRequest {
 export interface Task {
   id: number;
   title: string;
-  description?: string;
+  description: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PENDING';
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED';
-  dueDate?: string;
+  dueDate: string;
+  completedAt?: string;
   estimatedHours?: number;
   actualHours?: number;
-  createdAt: string;
-  updatedAt: string;
   project: Project;
   assignee?: User;
-  createdBy: User;
+  creator: User;
   parentTask?: Task;
-  subtasks?: Task[];
+  subtasks: Task[];
+  comments: Comment[];
+  files: FileAttachment[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateTaskRequest {
   title: string;
-  description?: string;
-  projectId: number;
+  description: string;
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  dueDate?: string;
-  estimatedHours?: number;
-  assigneeId?: number;
+  dueDate: string;
+  projectId: number;
+  assignedToId?: number;
   parentTaskId?: number;
+  estimatedHours?: number;
 }
 
 export interface UpdateTaskRequest {
@@ -209,17 +202,27 @@ export interface UpdateTaskRequest {
 }
 
 // Types pour les fichiers
-export interface File {
+export interface FileAttachment {
   id: number;
   fileName: string;
   originalFileName: string;
-  fileSize: number;
-  contentType: string;
   filePath: string;
-  uploadedAt: string;
-  uploadedBy: User;
+  contentType: string;
+  fileSize: number;
   project?: Project;
   task?: Task;
+  uploadedBy: User;
+  uploadedAt: string;
+}
+
+// Types pour les commentaires
+export interface Comment {
+  id: number;
+  content: string;
+  author: User;
+  task: Task;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FileUploadRequest {
@@ -238,16 +241,15 @@ export interface UserStats {
 export interface ProjectStats {
   todo: number;
   in_progress: number;
-  on_hold: number;
   completed: number;
-  archived: number;
+  planning: number;
 }
 
 export interface TaskStats {
   todo: number;
   in_progress: number;
-  on_hold: number;
   completed: number;
+  pending: number;
 }
 
 // Types pour les filtres et recherche

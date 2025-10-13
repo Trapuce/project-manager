@@ -1,231 +1,343 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
-import { Settings, Bell, Shield, Palette, Save } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { actionToast } from "@/components/ui/action-toast"
+import { usersService } from "@/lib/api"
+import { useAuthStore } from "@/stores/auth-store"
+import { updateProfileSchema, changePasswordSchema, type UpdateProfileFormData, type ChangePasswordFormData } from "@/lib/validations"
+import { Settings, User, Lock, Mail, Phone, Building, Calendar, Save } from "lucide-react"
+import { ProfileImageUpload } from "@/components/ui/profile-image-upload"
+import { SectionTransition, FadeInTransition } from "@/components/ui/section-transition"
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState({
-    notifications: {
-      email: true,
-      push: false,
-      taskUpdates: true,
-      projectUpdates: true,
-      teamUpdates: false,
-    },
-    appearance: {
-      theme: "system",
-      language: "fr",
-    },
-    privacy: {
-      profileVisible: true,
-      activityVisible: false,
+  const { user, refreshUser } = useAuthStore()
+  const [isUpdatingImage, setIsUpdatingImage] = useState(false)
+  const router = useRouter()
+
+  // Formulaire de profil
+  const profileForm = useForm<UpdateProfileFormData>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      phone: "",
+      department: "",
     },
   })
-  const { toast } = useToast()
 
-  const handleSave = () => {
-    toast({
-      title: "Paramètres sauvegardés",
-      description: "Vos préférences ont été mises à jour avec succès.",
-    })
+  // Formulaire de changement de mot de passe
+  const passwordForm = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmNewPassword: "",
+    },
+  })
+
+  // Pré-remplir le formulaire de profil
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phone: user.phone || "",
+        department: user.department || "",
+      })
+    }
+  }, [user, profileForm])
+
+  const handleImageUpdate = async (imageUrl: string) => {
+    if (!user) return
+
+    setIsUpdatingImage(true)
+    try {
+      await usersService.updateProfile({ 
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        department: user.department,
+      })
+      await refreshUser()
+      actionToast.updateSuccess("Photo de profil")
+    } catch (error: any) {
+      actionToast.updateError("Photo de profil", { description: "Erreur lors de la mise à jour de la photo" })
+    } finally {
+      setIsUpdatingImage(false)
+    }
   }
 
-  const updateNotificationSetting = (key: string, value: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
-      notifications: { ...prev.notifications, [key]: value },
-    }))
+  const handleSaveProfile = async (data: UpdateProfileFormData) => {
+    try {
+      await usersService.updateProfile(data)
+      await refreshUser()
+      actionToast.updateSuccess("Profil")
+      // Délai pour permettre aux données de se charger avant redirection
+      setTimeout(() => {
+        router.replace('/dashboard/profile')
+      }, 1000)
+    } catch (error: any) {
+      actionToast.updateError("Profil", { description: "Erreur lors de la mise à jour du profil" })
+    }
   }
 
-  const updateAppearanceSetting = (key: string, value: string) => {
-    setSettings((prev) => ({
-      ...prev,
-      appearance: { ...prev.appearance, [key]: value },
-    }))
+  const handleChangePassword = async (data: ChangePasswordFormData) => {
+    try {
+      await usersService.changePassword(data.currentPassword, data.newPassword)
+      passwordForm.reset()
+      actionToast.updateSuccess("Mot de passe")
+    } catch (error: any) {
+      actionToast.updateError("Mot de passe", { description: "Erreur lors du changement de mot de passe" })
+    }
   }
 
-  const updatePrivacySetting = (key: string, value: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
-      privacy: { ...prev.privacy, [key]: value },
-    }))
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-muted-foreground">Chargement du profil...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Settings className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold text-balance">Paramètres</h1>
-          <p className="text-muted-foreground">Gérez vos préférences et paramètres de compte</p>
+      <FadeInTransition>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold text-balance">Paramètres</h1>
+            <p className="text-muted-foreground">Gérez votre profil et vos paramètres de compte</p>
+          </div>
         </div>
-      </div>
+      </FadeInTransition>
 
-      <div className="grid gap-6">
-        {/* Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
-            <CardDescription>Configurez comment vous souhaitez être notifié des mises à jour</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Notifications par email</Label>
-                <p className="text-sm text-muted-foreground">Recevoir les notifications importantes par email</p>
+      <SectionTransition delay={0.1}>
+        <div className="grid gap-6">
+          {/* Profil Utilisateur */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Profil Utilisateur
+              </CardTitle>
+              <CardDescription>Informations personnelles et de contact</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Avatar et informations de base */}
+              <div className="flex items-center gap-6">
+                <ProfileImageUpload
+                  currentImage={user.profilePicture}
+                  userName={`${user.firstName} ${user.lastName}`}
+                  onImageUpdate={handleImageUpdate}
+                  disabled={isUpdatingImage}
+                />
+                <div className="space-y-1">
+                  <h3 className="text-lg font-medium">{user.firstName} {user.lastName}</h3>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{user.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'MANAGER' ? 'default' : 'secondary'}>
+                      {user.role}
+                    </Badge>
+                    <Badge variant={user.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                      {user.status}
+                    </Badge>
+                  </div>
+                </div>
               </div>
-              <Switch
-                checked={settings.notifications.email}
-                onCheckedChange={(checked) => updateNotificationSetting("email", checked)}
-              />
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Notifications push</Label>
-                <p className="text-sm text-muted-foreground">Recevoir les notifications dans le navigateur</p>
+              <Separator />
+
+              {/* Formulaire de profil */}
+              <Form {...profileForm}>
+                <form onSubmit={profileForm.handleSubmit(handleSaveProfile)} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={profileForm.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prénom</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={profileForm.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nom</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={profileForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Téléphone</FormLabel>
+                          <FormControl>
+                            <Input placeholder="+33 1 23 45 67 89" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={profileForm.control}
+                      name="department"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Département</FormLabel>
+                          <FormControl>
+                            <Input placeholder="IT, Marketing, etc." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={profileForm.formState.isSubmitting}>
+                      {profileForm.formState.isSubmitting && <Save className="mr-2 h-4 w-4 animate-spin" />}
+                      <Save className="mr-2 h-4 w-4" />
+                      Sauvegarder
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Sécurité */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Sécurité
+              </CardTitle>
+              <CardDescription>Gérez votre mot de passe et la sécurité de votre compte</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...passwordForm}>
+                <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
+                  <FormField
+                    control={passwordForm.control}
+                    name="currentPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe actuel</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={passwordForm.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nouveau mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={passwordForm.control}
+                    name="confirmNewPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmer le nouveau mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={passwordForm.formState.isSubmitting}>
+                      {passwordForm.formState.isSubmitting && <Save className="mr-2 h-4 w-4 animate-spin" />}
+                      <Save className="mr-2 h-4 w-4" />
+                      Changer le mot de passe
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Informations du compte */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Informations du compte
+              </CardTitle>
+              <CardDescription>Détails de votre compte et historique</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date de création</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(user.createdAt).toLocaleDateString('fr-FR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Dernière mise à jour</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(user.updatedAt).toLocaleDateString('fr-FR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
               </div>
-              <Switch
-                checked={settings.notifications.push}
-                onCheckedChange={(checked) => updateNotificationSetting("push", checked)}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Mises à jour des tâches</Label>
-                <p className="text-sm text-muted-foreground">Notifications pour les changements de tâches</p>
-              </div>
-              <Switch
-                checked={settings.notifications.taskUpdates}
-                onCheckedChange={(checked) => updateNotificationSetting("taskUpdates", checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Mises à jour des projets</Label>
-                <p className="text-sm text-muted-foreground">Notifications pour les changements de projets</p>
-              </div>
-              <Switch
-                checked={settings.notifications.projectUpdates}
-                onCheckedChange={(checked) => updateNotificationSetting("projectUpdates", checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Activité de l'équipe</Label>
-                <p className="text-sm text-muted-foreground">Notifications pour l'activité des membres de l'équipe</p>
-              </div>
-              <Switch
-                checked={settings.notifications.teamUpdates}
-                onCheckedChange={(checked) => updateNotificationSetting("teamUpdates", checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Apparence */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Apparence
-            </CardTitle>
-            <CardDescription>Personnalisez l'apparence de l'interface</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Thème</Label>
-              <Select
-                value={settings.appearance.theme}
-                onValueChange={(value) => updateAppearanceSetting("theme", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Clair</SelectItem>
-                  <SelectItem value="dark">Sombre</SelectItem>
-                  <SelectItem value="system">Système</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Langue</Label>
-              <Select
-                value={settings.appearance.language}
-                onValueChange={(value) => updateAppearanceSetting("language", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fr">Français</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="es">Español</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Confidentialité */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Confidentialité
-            </CardTitle>
-            <CardDescription>Contrôlez la visibilité de vos informations</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Profil visible</Label>
-                <p className="text-sm text-muted-foreground">Permettre aux autres de voir votre profil</p>
-              </div>
-              <Switch
-                checked={settings.privacy.profileVisible}
-                onCheckedChange={(checked) => updatePrivacySetting("profileVisible", checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Activité visible</Label>
-                <p className="text-sm text-muted-foreground">Afficher votre activité aux membres de l'équipe</p>
-              </div>
-              <Switch
-                checked={settings.privacy.activityVisible}
-                onCheckedChange={(checked) => updatePrivacySetting("activityVisible", checked)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex justify-end">
-          <Button onClick={handleSave} className="bg-primary hover:bg-primary/90">
-            <Save className="h-4 w-4 mr-2" />
-            Sauvegarder les paramètres
-          </Button>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </SectionTransition>
     </div>
   )
 }

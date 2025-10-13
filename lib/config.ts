@@ -9,8 +9,8 @@ export const APP_CONFIG = {
   // Configuration des fichiers
   MAX_FILE_SIZE: parseInt(process.env.NEXT_PUBLIC_MAX_FILE_SIZE || '10485760'), // 10MB
   
-  // Mode debug
-  DEBUG_MODE: process.env.NEXT_PUBLIC_DEBUG_MODE === 'true',
+  // Mode debug (désactivé en production)
+  DEBUG_MODE: false,
   
   // Configuration de la pagination
   DEFAULT_PAGE_SIZE: 20,

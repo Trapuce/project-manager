@@ -1,148 +1,137 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { useAuthStore } from "@/stores/auth-store"
+import { usersService } from "@/lib/api"
+import { updateProfileSchema, type UpdateProfileFormData } from "@/lib/validations/user-schemas"
+import { actionToast } from "@/components/ui/action-toast"
+import { Save, Loader2 } from "lucide-react"
 
 export function ProfileForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    firstName: "Jean",
-    lastName: "Dupont",
-    email: "jean.dupont@email.com",
-    phone: "+33 6 12 34 56 78",
-    bio: "Développeur passionné avec 5 ans d'expérience en gestion de projet.",
-    role: "admin",
-    department: "IT",
-    location: "Paris, France",
-  })
-  const { toast } = useToast()
+  const { user, refreshUser } = useAuthStore()
+  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const form = useForm<UpdateProfileFormData>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      phone: "",
+      department: "",
+    },
+  })
+
+  // Pré-remplir le formulaire avec les données utilisateur
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phone: user.phone || "",
+        department: user.department || "",
+      })
+    }
+  }, [user, form])
+
+  const onSubmit = async (data: UpdateProfileFormData) => {
+    if (!user) return
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      toast({
-        title: "Profil mis à jour",
-        description: "Vos informations ont été sauvegardées avec succès.",
-      })
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les modifications.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
+      await usersService.updateProfile(data)
+      await refreshUser()
+      actionToast.updateSuccess("Profil")
+      // Délai pour permettre aux données de se charger avant redirection
+      setTimeout(() => {
+        router.replace('/dashboard')
+      }, 1000)
+    } catch (error: any) {
+      actionToast.updateError("Profil", { description: "Erreur lors de la mise à jour du profil" })
     }
   }
 
-  const updateFormData = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Informations personnelles</CardTitle>
-        <CardDescription>Mettez à jour vos informations de profil et préférences.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">Prénom</Label>
-              <Input
-                id="firstName"
-                value={formData.firstName}
-                onChange={(e) => updateFormData("firstName", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Nom</Label>
-              <Input
-                id="lastName"
-                value={formData.lastName}
-                onChange={(e) => updateFormData("lastName", e.target.value)}
-              />
-            </div>
-          </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="firstName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Prénom</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => updateFormData("email", e.target.value)}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="lastName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nom</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input id="phone" value={formData.phone} onChange={(e) => updateFormData("phone", e.target.value)} />
-          </div>
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Téléphone</FormLabel>
+                <FormControl>
+                  <Input placeholder="+33 1 23 45 67 89" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="department">Département</Label>
-              <Select value={formData.department} onValueChange={(value) => updateFormData("department", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="IT">IT</SelectItem>
-                  <SelectItem value="Marketing">Marketing</SelectItem>
-                  <SelectItem value="Sales">Ventes</SelectItem>
-                  <SelectItem value="HR">Ressources Humaines</SelectItem>
-                  <SelectItem value="Finance">Finance</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">Localisation</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => updateFormData("location", e.target.value)}
-              />
-            </div>
-          </div>
+          <FormField
+            control={form.control}
+            name="department"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Département</FormLabel>
+                <FormControl>
+                  <Input placeholder="IT, Marketing, etc." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              rows={4}
-              value={formData.bio}
-              onChange={(e) => updateFormData("bio", e.target.value)}
-              placeholder="Parlez-nous de vous..."
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline">
-              Annuler
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Sauvegarder
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        <div className="flex justify-end">
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Save className="mr-2 h-4 w-4" />
+            Sauvegarder
+          </Button>
+        </div>
+      </form>
+    </Form>
   )
 }

@@ -74,6 +74,17 @@ class ApiClient {
           window.location.href = '/auth/login';
         }
       }
+      
+      // Essayer de récupérer le message d'erreur détaillé
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          throw new Error(errorData.message);
+        }
+      } catch (parseError) {
+        // Si on ne peut pas parser le JSON, utiliser le message par défaut
+      }
+      
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     return response.json();
@@ -100,7 +111,7 @@ class ApiClient {
         return true;
       }
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      // Erreur silencieuse lors du rafraîchissement du token
     }
 
     return false;

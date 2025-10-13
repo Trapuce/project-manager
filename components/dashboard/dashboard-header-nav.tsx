@@ -12,13 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, LogOut, User, Settings } from "lucide-react"
-import { NotificationsDropdown } from "./notifications-dropdown"
 import { ModeToggle } from "@/components/mode-toggle"
-import { useAuth } from "@/hooks/use-auth"
+import { useAuthStore } from "@/stores/auth-store"
 import { useRouter } from "next/navigation"
+import { actionToast } from "@/components/ui/action-toast"
 
 export function DashboardHeader() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthStore()
   const router = useRouter()
 
   const handleLogout = async () => {
@@ -32,6 +32,7 @@ export function DashboardHeader() {
   const handleSettings = () => {
     router.push('/dashboard/settings')
   }
+
 
   const getUserInitials = () => {
     if (!user) return 'U'
@@ -49,8 +50,6 @@ export function DashboardHeader() {
 
       <div className="flex items-center space-x-4">
         <ModeToggle />
-
-        <NotificationsDropdown />
 
         {/* User menu */}
         <DropdownMenu>

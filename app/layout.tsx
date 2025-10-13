@@ -4,8 +4,8 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from "@/hooks/use-auth"
+import { Toaster as SonnerToaster } from "sonner"
+import { AuthInitializer } from "@/components/auth/auth-initializer"
 import { Suspense } from "react"
 import "./globals.css"
 
@@ -24,12 +24,16 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={null}>
-          <AuthProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              {children}
-              <Toaster />
-            </ThemeProvider>
-          </AuthProvider>
+          <AuthInitializer />
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+            <SonnerToaster 
+              position="top-right"
+              expand={true}
+              richColors={true}
+              closeButton={true}
+            />
+          </ThemeProvider>
         </Suspense>
         <Analytics />
       </body>

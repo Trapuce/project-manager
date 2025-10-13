@@ -2,8 +2,6 @@ import { apiClient } from './client';
 import { API_CONFIG } from './config';
 import type {
   User,
-  UpdateUserRequest,
-  ChangePasswordRequest,
   UserStats,
   ApiResponse,
   PaginatedResponse,
@@ -11,8 +9,8 @@ import type {
 } from './config';
 
 export class UsersService {
-  // Récupérer tous les utilisateurs (paginé)
-  async getUsers(params?: SearchParams): Promise<PaginatedResponse<User>> {
+  // Obtenir tous les utilisateurs (Admin seulement)
+  async getAllUsers(params?: SearchParams): Promise<PaginatedResponse<User>> {
     const response: ApiResponse<PaginatedResponse<User>> = await apiClient.get(
       API_CONFIG.ENDPOINTS.USERS.BASE,
       params
@@ -20,25 +18,25 @@ export class UsersService {
     return response.data;
   }
 
-  // Récupérer un utilisateur par ID
-  async getUserById(id: number): Promise<User> {
-    const response: ApiResponse<User> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.USERS.BASE}/${id}`
-    );
-    return response.data;
-  }
-
-  // Récupérer le profil de l'utilisateur connecté
-  async getCurrentUserProfile(): Promise<User> {
+  // Obtenir le profil de l'utilisateur connecté
+  async getProfile(): Promise<User> {
     const response: ApiResponse<User> = await apiClient.get(
       API_CONFIG.ENDPOINTS.USERS.PROFILE
     );
     return response.data;
   }
 
+  // Obtenir un utilisateur par ID
+  async getUserById(id: number): Promise<User> {
+    const response: ApiResponse<User> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.USERS.BY_ID(id)
+    );
+    return response.data;
+  }
+
   // Rechercher des utilisateurs
-  async searchUsers(searchTerm: string, params?: SearchParams): Promise<PaginatedResponse<User>> {
-    const searchParams = { search: searchTerm, ...params };
+  async searchUsers(query: string, params?: SearchParams): Promise<PaginatedResponse<User>> {
+    const searchParams = { ...params, query };
     const response: ApiResponse<PaginatedResponse<User>> = await apiClient.get(
       API_CONFIG.ENDPOINTS.USERS.SEARCH,
       searchParams
@@ -46,69 +44,7 @@ export class UsersService {
     return response.data;
   }
 
-  // Récupérer les utilisateurs par statut
-  async getUsersByStatus(status: 'ACTIVE' | 'INACTIVE' | 'PENDING'): Promise<User[]> {
-    const response: ApiResponse<User[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.USERS.STATUS}/${status}`
-    );
-    return response.data;
-  }
-
-  // Récupérer les utilisateurs par rôle
-  async getUsersByRole(role: 'ADMIN' | 'MANAGER' | 'MEMBER'): Promise<User[]> {
-    const response: ApiResponse<User[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.USERS.ROLE}/${role}`
-    );
-    return response.data;
-  }
-
-  // Récupérer les utilisateurs par département
-  async getUsersByDepartment(department: string): Promise<User[]> {
-    const response: ApiResponse<User[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.USERS.DEPARTMENT}/${encodeURIComponent(department)}`
-    );
-    return response.data;
-  }
-
-  // Récupérer les utilisateurs d'un projet
-  async getUsersByProject(projectId: number): Promise<User[]> {
-    const response: ApiResponse<User[]> = await apiClient.get(
-      `${API_CONFIG.ENDPOINTS.USERS.PROJECT}/${projectId}`
-    );
-    return response.data;
-  }
-
-  // Mettre à jour un utilisateur
-  async updateUser(id: number, userData: UpdateUserRequest): Promise<User> {
-    const response: ApiResponse<User> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.USERS.BASE}/${id}`,
-      userData
-    );
-    return response.data;
-  }
-
-  // Changer le mot de passe d'un utilisateur
-  async changePassword(id: number, passwordData: ChangePasswordRequest): Promise<void> {
-    await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.USERS.BASE}/${id}/password`,
-      passwordData
-    );
-  }
-
-  // Supprimer un utilisateur (admin seulement)
-  async deleteUser(id: number): Promise<void> {
-    await apiClient.delete(`${API_CONFIG.ENDPOINTS.USERS.BASE}/${id}`);
-  }
-
-  // Désactiver un utilisateur (admin seulement)
-  async deactivateUser(id: number): Promise<User> {
-    const response: ApiResponse<User> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.USERS.BASE}/${id}/deactivate`
-    );
-    return response.data;
-  }
-
-  // Récupérer les statistiques des utilisateurs
+  // Obtenir les statistiques des utilisateurs
   async getUserStats(): Promise<UserStats> {
     const response: ApiResponse<UserStats> = await apiClient.get(
       API_CONFIG.ENDPOINTS.USERS.STATS
@@ -116,29 +52,115 @@ export class UsersService {
     return response.data;
   }
 
-  // Méthodes utilitaires
+  // Mettre à jour le profil utilisateur
+  async updateProfile(userData: Partial<User>): Promise<User> {
+    // Récupérer l'ID de l'utilisateur depuis le token ou les données
+    const currentUser = await this.getProfile();
+    const response: ApiResponse<User> = await apiClient.put(
+      API_CONFIG.ENDPOINTS.USERS.BY_ID(currentUser.id),
+      userData
+    );
+    return response.data;
+  }
+
+  // Changer le mot de passe
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    // Essayer différentes structures de données
+    const passwordDataVariants = [
+      { currentPassword, newPassword },
+      { oldPassword: currentPassword, newPassword },
+      { current_password: currentPassword, new_password: newPassword },
+      { old_password: currentPassword, new_password: newPassword },
+      { password: currentPassword, newPassword },
+      { password: currentPassword, new_password: newPassword }
+    ];
+
+    // Essayer plusieurs endpoints possibles
+    const endpoints = [
+      API_CONFIG.ENDPOINTS.AUTH.CHANGE_PASSWORD,
+      API_CONFIG.ENDPOINTS.USERS.CHANGE_PASSWORD,
+      API_CONFIG.ENDPOINTS.USERS.PROFILE
+    ];
+
+    let lastError: any = null;
+
+    // Essayer chaque combinaison d'endpoint et de structure de données
+    for (const endpoint of endpoints) {
+      for (const passwordData of passwordDataVariants) {
+        try {
+          await apiClient.put(endpoint, passwordData);
+          return; // Succès, sortir de la fonction
+        } catch (error: any) {
+          lastError = error;
+        }
+      }
+    }
+
+    // Si tous les endpoints échouent, essayer avec l'ID utilisateur
+    try {
+      const currentUser = await this.getProfile();
+      for (const passwordData of passwordDataVariants) {
+        try {
+          await apiClient.put(
+            API_CONFIG.ENDPOINTS.USERS.BY_ID(currentUser.id),
+            passwordData
+          );
+          return; // Succès
+        } catch (error: any) {
+          lastError = error;
+        }
+      }
+    } catch (error: any) {
+      // Erreur lors de la récupération du profil
+    }
+
+    // Si tout échoue, lancer la dernière erreur
+    throw lastError || new Error('Impossible de changer le mot de passe');
+  }
+
+  // Obtenir les utilisateurs par rôle
+  async getUsersByRole(role: 'ADMIN' | 'MANAGER' | 'MEMBER'): Promise<User[]> {
+    const response: ApiResponse<User[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.USERS.BASE,
+      { role }
+    );
+    return response.data;
+  }
+
+  // Obtenir les utilisateurs par département
+  async getUsersByDepartment(department: string): Promise<User[]> {
+    const response: ApiResponse<User[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.USERS.BASE,
+      { department }
+    );
+    return response.data;
+  }
+
+  // Obtenir les utilisateurs actifs
   async getActiveUsers(): Promise<User[]> {
-    return this.getUsersByStatus('ACTIVE');
+    const response: ApiResponse<User[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.USERS.BASE,
+      { status: 'ACTIVE' }
+    );
+    return response.data;
   }
 
+  // Obtenir les utilisateurs inactifs
   async getInactiveUsers(): Promise<User[]> {
-    return this.getUsersByStatus('INACTIVE');
+    const response: ApiResponse<User[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.USERS.BASE,
+      { status: 'INACTIVE' }
+    );
+    return response.data;
   }
 
+  // Obtenir les utilisateurs en attente
   async getPendingUsers(): Promise<User[]> {
-    return this.getUsersByStatus('PENDING');
-  }
-
-  async getAdmins(): Promise<User[]> {
-    return this.getUsersByRole('ADMIN');
-  }
-
-  async getManagers(): Promise<User[]> {
-    return this.getUsersByRole('MANAGER');
-  }
-
-  async getMembers(): Promise<User[]> {
-    return this.getUsersByRole('MEMBER');
+    const response: ApiResponse<User[]> = await apiClient.get(
+      API_CONFIG.ENDPOINTS.USERS.BASE,
+      { status: 'PENDING' }
+    );
+    return response.data;
   }
 }
 
