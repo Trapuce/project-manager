@@ -83,15 +83,74 @@ L'application se connecte à un backend Spring Boot via les endpoints suivants :
 
 ## Déploiement
 
-1. Construire l'application
+### Déploiement avec Docker
+
+#### 1. Développement
 ```bash
-npm run build
+# Démarrer avec Docker Compose
+docker-compose -f docker-compose.dev.yml up --build
+
+# Ou en arrière-plan
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
-2. Démarrer en production
+#### 2. Production
 ```bash
-npm run start
+# Démarrer l'application seule
+docker-compose up --build
+
+# Démarrer avec Nginx (reverse proxy)
+docker-compose --profile production up --build
+
+# Démarrer l'application seule
+docker-compose up --build
 ```
+
+#### 3. Build manuel
+```bash
+# Construire l'image
+docker build -t projecthub .
+
+# Lancer le conteneur
+docker run -p 3000:3000 --env-file .env.local projecthub
+```
+
+### Configuration
+
+1. Copier le fichier d'environnement
+```bash
+cp env.example .env.local
+```
+
+2. Modifier les variables selon votre environnement
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=https://your-api-domain.com
+# L'URL doit pointer vers votre backend Spring Boot
+```
+
+### Déploiement sur serveur
+
+#### Avec Docker Compose (recommandé)
+```bash
+# Cloner le projet
+git clone <repository-url>
+cd project-manager
+
+# Configurer l'environnement
+cp env.example .env.local
+# Éditer .env.local avec vos valeurs
+
+# Démarrer en production
+docker-compose --profile production up -d --build
+```
+
+### Variables d'environnement
+
+| Variable | Description | Défaut |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | URL de l'API backend Spring Boot | `http://localhost:8080` |
+| `DOMAIN` | Domaine de production | - |
 
 ## Contribution
 

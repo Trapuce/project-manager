@@ -1,0 +1,26 @@
+# Dockerfile pour le développement
+FROM node:18-alpine
+
+# Installer les dépendances nécessaires
+RUN apk add --no-cache libc6-compat curl
+
+# Activer pnpm
+RUN corepack enable pnpm
+
+WORKDIR /app
+
+# Copier les fichiers de dépendances
+COPY package*.json pnpm-lock.yaml* ./
+
+# Installer les dépendances
+RUN pnpm install
+
+# Copier le code source
+COPY . .
+
+# Exposer le port
+EXPOSE 3000
+
+# Commande de développement
+CMD ["pnpm", "dev"]
+
