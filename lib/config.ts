@@ -46,8 +46,9 @@ export const APP_CONFIG = {
   TASK_STATUS: {
     TODO: 'TODO',
     IN_PROGRESS: 'IN_PROGRESS',
-    ON_HOLD: 'ON_HOLD',
-    COMPLETED: 'COMPLETED',
+    IN_REVIEW: 'IN_REVIEW',
+    DONE: 'DONE',
+    CANCELLED: 'CANCELLED',
   },
   
   // Configuration des priorités
@@ -55,6 +56,7 @@ export const APP_CONFIG = {
     LOW: 'LOW',
     MEDIUM: 'MEDIUM',
     HIGH: 'HIGH',
+    URGENT: 'URGENT',
   },
   
   // Configuration des statuts utilisateur

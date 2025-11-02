@@ -22,14 +22,14 @@ export const API_CONFIG = {
     PROJECTS: {
       BASE: '/api/projects',
       BY_ID: (id: number) => `/api/projects/${id}`,
-      MY_PROJECTS: '/api/projects/my',
+      MY_PROJECTS: '/api/projects/my-projects',
       SEARCH: '/api/projects/search',
       STATS: '/api/projects/stats',
     },
     TASKS: {
       BASE: '/api/tasks',
       BY_ID: (id: number) => `/api/tasks/${id}`,
-      MY_TASKS: '/api/tasks/my',
+      MY_TASKS: '/api/tasks/my-tasks',
       BY_PROJECT: (projectId: number) => `/api/tasks/project/${projectId}`,
       SEARCH: '/api/tasks/search',
       STATS: '/api/tasks/stats',
@@ -130,10 +130,10 @@ export interface Project {
   id: number;
   name: string;
   description: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING';
-  startDate: string;
-  dueDate: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED';
+  startDate?: string;
+  dueDate?: string;
   owner: User;
   members: User[];
   tasks: Task[];
@@ -145,16 +145,16 @@ export interface Project {
 export interface CreateProjectRequest {
   name: string;
   description: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  startDate: string;
-  dueDate: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  startDate?: string;
+  dueDate?: string;
   memberIds?: number[];
 }
 
 export interface UpdateProjectRequest {
   name?: string;
   description?: string;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   startDate?: string;
   dueDate?: string;
 }
@@ -164,9 +164,9 @@ export interface Task {
   id: number;
   title: string;
   description: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PENDING';
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  dueDate: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CANCELLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  dueDate?: string;
   completedAt?: string;
   estimatedHours?: number;
   actualHours?: number;
@@ -184,10 +184,10 @@ export interface Task {
 export interface CreateTaskRequest {
   title: string;
   description: string;
-  priority: 'LOW' | 'MEDIUM' | 'HIGH';
-  dueDate: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  dueDate?: string;
   projectId: number;
-  assignedToId?: number;
+  assigneeId?: number;
   parentTaskId?: number;
   estimatedHours?: number;
 }
@@ -195,7 +195,7 @@ export interface CreateTaskRequest {
 export interface UpdateTaskRequest {
   title?: string;
   description?: string;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH';
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   dueDate?: string;
   estimatedHours?: number;
   actualHours?: number;

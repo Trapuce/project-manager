@@ -96,7 +96,7 @@ export class ProjectsService {
   }
 
   // Obtenir les projets par statut
-  async getProjectsByStatus(status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PLANNING'): Promise<Project[]> {
+  async getProjectsByStatus(status: 'TODO' | 'IN_PROGRESS' | 'ON_HOLD' | 'COMPLETED' | 'ARCHIVED'): Promise<Project[]> {
     const response: ApiResponse<Project[]> = await apiClient.get(
       API_CONFIG.ENDPOINTS.PROJECTS.BASE,
       { status }
@@ -105,7 +105,7 @@ export class ProjectsService {
   }
 
   // Obtenir les projets par priorité
-  async getProjectsByPriority(priority: 'LOW' | 'MEDIUM' | 'HIGH'): Promise<Project[]> {
+  async getProjectsByPriority(priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'): Promise<Project[]> {
     const response: ApiResponse<Project[]> = await apiClient.get(
       API_CONFIG.ENDPOINTS.PROJECTS.BASE,
       { priority }

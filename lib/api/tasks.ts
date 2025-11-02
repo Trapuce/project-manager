@@ -87,50 +87,18 @@ export class TasksService {
     return response.data;
   }
 
-  // Assigner une tâche à un utilisateur
-  async assignTask(taskId: number, userId: number): Promise<Task> {
+  // Changer le statut d'une tâche
+  async updateTaskStatus(taskId: number, status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CANCELLED'): Promise<Task> {
     const response: ApiResponse<Task> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.TASKS.BY_ID(taskId)}/assign`,
-      { assignedToId: userId }
+      `${API_CONFIG.ENDPOINTS.TASKS.BY_ID(taskId)}/status?status=${status}`,
+      {}
     );
     return response.data;
   }
 
-  // Désassigner une tâche
-  async unassignTask(taskId: number): Promise<Task> {
-    const response: ApiResponse<Task> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.TASKS.BY_ID(taskId)}/assign`,
-      { assignedToId: null }
-    );
-    return response.data;
-  }
-
-  // Marquer une tâche comme terminée
-  async completeTask(taskId: number): Promise<Task> {
-    const response: ApiResponse<Task> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.TASKS.BY_ID(taskId)}/complete`
-    );
-    return response.data;
-  }
-
-  // Marquer une tâche comme en cours
-  async startTask(taskId: number): Promise<Task> {
-    const response: ApiResponse<Task> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.TASKS.BY_ID(taskId)}/start`
-    );
-    return response.data;
-  }
-
-  // Marquer une tâche comme en attente
-  async pauseTask(taskId: number): Promise<Task> {
-    const response: ApiResponse<Task> = await apiClient.put(
-      `${API_CONFIG.ENDPOINTS.TASKS.BY_ID(taskId)}/pause`
-    );
-    return response.data;
-  }
 
   // Obtenir les tâches par statut
-  async getTasksByStatus(status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'PENDING'): Promise<Task[]> {
+  async getTasksByStatus(status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'CANCELLED'): Promise<Task[]> {
     const response: ApiResponse<Task[]> = await apiClient.get(
       API_CONFIG.ENDPOINTS.TASKS.BASE,
       { status }
@@ -139,7 +107,7 @@ export class TasksService {
   }
 
   // Obtenir les tâches par priorité
-  async getTasksByPriority(priority: 'LOW' | 'MEDIUM' | 'HIGH'): Promise<Task[]> {
+  async getTasksByPriority(priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'): Promise<Task[]> {
     const response: ApiResponse<Task[]> = await apiClient.get(
       API_CONFIG.ENDPOINTS.TASKS.BASE,
       { priority }
@@ -160,7 +128,7 @@ export class TasksService {
   async getTasksByAssignee(userId: number): Promise<Task[]> {
     const response: ApiResponse<Task[]> = await apiClient.get(
       API_CONFIG.ENDPOINTS.TASKS.BASE,
-      { assignedToId: userId }
+      { assigneeId: userId }
     );
     return response.data;
   }
