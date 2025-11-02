@@ -15,13 +15,14 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
       
-      # HTTPS Router - Front-end sur project-manager.trapuce.tech
-      - "traefik.http.routers.frontend.rule=Host(`project-manager.trapuce.tech`)"
+      # HTTPS Router - Front-end sur projectHub.trapuce.tech (exclut /api pour le backend)
+      - "traefik.http.routers.frontend.rule=Host(`projectHub.trapuce.tech`) && !PathPrefix(`/api`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
       - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+      - "traefik.http.routers.frontend.priority=1"
       
       # HTTP Router - Redirection vers HTTPS
-      - "traefik.http.routers.frontend-http.rule=Host(`project-manager.trapuce.tech`)"
+      - "traefik.http.routers.frontend-http.rule=Host(`projectHub.trapuce.tech`) && !PathPrefix(`/api`)"
       - "traefik.http.routers.frontend-http.entrypoints=web"
       - "traefik.http.routers.frontend-http.middlewares=redirect-to-https"
       

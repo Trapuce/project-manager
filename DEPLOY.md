@@ -23,15 +23,15 @@ NEXT_PUBLIC_API_URL=https://projectHub.trapuce.tech
 ### 2. Configuration Traefik
 
 Le fichier `docker-compose.yml` est configuré pour :
-- Exposer le front-end sur `project-manager.trapuce.tech`
+- Exposer le front-end sur `projectHub.trapuce.tech` (tout sauf `/api`)
 - Utiliser HTTPS avec Let's Encrypt via Traefik
 - Se connecter au réseau Traefik existant
 
 **Configuration du routage** :
-- Front-end : `https://project-manager.trapuce.tech`
-- Backend : `https://projectHub.trapuce.tech/api` (déjà configuré dans Traefik)
+- Front-end : `https://projectHub.trapuce.tech` (toutes les routes sauf `/api`)
+- Backend : `https://projectHub.trapuce.tech/api` (déjà configuré dans Traefik avec une priorité plus élevée)
 
-**Important** : Assurez-vous que le DNS pour `project-manager.trapuce.tech` pointe vers votre VPS pour que Traefik puisse générer le certificat SSL automatiquement.
+**Important** : Le front-end et le backend partagent le même domaine. Le front-end est configuré avec `!PathPrefix(/api)` pour exclure les routes API qui sont gérées par le backend.
 
 ### 3. Configuration du réseau Traefik
 
@@ -76,7 +76,7 @@ docker-compose logs -f frontend
 docker logs traefik  # ou le nom de votre conteneur Traefik
 ```
 
-Le front-end devrait être accessible sur `https://project-manager.trapuce.tech`.
+Le front-end devrait être accessible sur `https://projectHub.trapuce.tech`.
 
 ## Mise à jour
 
@@ -139,7 +139,7 @@ docker compose up -d
 
 ## Architecture
 
-- **Front-end** : Next.js sur le port 3000 (interne au conteneur), accessible sur `https://project-manager.trapuce.tech`
+- **Front-end** : Next.js sur le port 3000 (interne au conteneur), accessible sur `https://projectHub.trapuce.tech`
 - **Proxy** : Traefik route le trafic HTTPS vers le conteneur
 - **Backend** : Accessible sur `https://projectHub.trapuce.tech/api`
 
