@@ -48,15 +48,14 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# Fichiers de documentation
+# Fichiers de documentation (garder DEPLOY.md pour référence)
 README.md
-*.md
 docs/
 
-# Fichiers Docker
-Dockerfile*
-docker-compose*
+# Fichiers Docker (pas nécessaires dans l'image)
+docker-compose*.yml
 .dockerignore
+deploy.sh
 
 # Fichiers de déploiement
 .vercel/
