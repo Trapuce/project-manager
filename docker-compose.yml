@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -31,11 +29,9 @@ services:
       
       # Service
       - "traefik.http.services.frontend.loadbalancer.server.port=3000"
-      
     networks:
       - web
 
 networks:
   web:
     external: true
-
