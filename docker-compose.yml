@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://projectHub.trapuce.tech}
     container_name: project-manager-frontend
     restart: unless-stopped
     environment:

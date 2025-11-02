@@ -19,6 +19,9 @@ WORKDIR /app
 # Activer pnpm
 RUN corepack enable pnpm
 
+# Arguments de build (peuvent être passés via --build-arg)
+ARG NEXT_PUBLIC_API_URL=https://projectHub.trapuce.tech
+
 # Copier les dépendances du stage précédent
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -28,6 +31,7 @@ COPY . .
 # Variables d'environnement pour le build
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Build de l'application Next.js
 RUN pnpm run build

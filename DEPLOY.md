@@ -7,7 +7,7 @@ Ce guide explique comment déployer le front-end Next.js sur votre VPS où Traef
 - Docker et Docker Compose installés sur le VPS
 - Traefik déjà configuré et fonctionnel
 - Le réseau Docker `traefik_default` existe (ou ajustez le nom dans docker-compose.yml)
-- Le backend est accessible sur `https://projecthub.trapuce.tech/api`
+- Le backend est accessible sur `https://projectHub.trapuce.tech/api`
 
 ## Configuration
 
@@ -17,7 +17,7 @@ Créez un fichier `.env` à la racine du projet :
 
 ```env
 NODE_ENV=production
-NEXT_PUBLIC_API_URL=https://projecthub.trapuce.tech/api
+NEXT_PUBLIC_API_URL=https://projectHub.trapuce.tech
 ```
 
 ### 2. Configuration Traefik
@@ -29,7 +29,7 @@ Le fichier `docker-compose.yml` est configuré pour :
 
 **Configuration du routage** :
 - Front-end : `https://project-manager.trapuce.tech`
-- Backend : `https://projecthub.trapuce.tech/api` (déjà configuré dans Traefik)
+- Backend : `https://projectHub.trapuce.tech/api` (déjà configuré dans Traefik)
 
 **Important** : Assurez-vous que le DNS pour `project-manager.trapuce.tech` pointe vers votre VPS pour que Traefik puisse générer le certificat SSL automatiquement.
 
@@ -122,18 +122,24 @@ docker inspect project-manager-frontend | grep -A 20 Labels
 
 ### Erreurs de connexion au backend
 
-Vérifiez que la variable `NEXT_PUBLIC_API_URL` dans le `.env` pointe bien vers `https://projecthub.trapuce.tech/api`.
+Vérifiez que la variable `NEXT_PUBLIC_API_URL` dans le `.env` pointe bien vers `https://projectHub.trapuce.tech` (sans `/api` à la fin).
 
-Note : Les variables `NEXT_PUBLIC_*` doivent être définies au moment du build. Si vous changez cette valeur, vous devrez reconstruire l'image :
+Note : Les variables `NEXT_PUBLIC_*` doivent être définies au moment du build. Assurez-vous que le fichier `.env` contient `NEXT_PUBLIC_API_URL=https://projectHub.trapuce.tech` avant de construire l'image. Si vous changez cette valeur, vous devrez reconstruire l'image :
 
 ```bash
-docker-compose build --no-cache
-docker-compose up -d
+# S'assurer que le .env est à jour
+echo "NEXT_PUBLIC_API_URL=https://projectHub.trapuce.tech" > .env
+
+# Reconstruire l'image
+docker compose build --no-cache
+
+# Redémarrer
+docker compose up -d
 ```
 
 ## Architecture
 
 - **Front-end** : Next.js sur le port 3000 (interne au conteneur), accessible sur `https://project-manager.trapuce.tech`
 - **Proxy** : Traefik route le trafic HTTPS vers le conteneur
-- **Backend** : Accessible sur `https://projecthub.trapuce.tech/api`
+- **Backend** : Accessible sur `https://projectHub.trapuce.tech/api`
 
