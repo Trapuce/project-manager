@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { ModeToggle } from "@/components/mode-toggle"
 import { useAuthStore } from "@/stores/auth-store"
-import { CheckCircle, Users, Calendar, BarChart3, Zap, Shield, ArrowRight, Target, Clock } from "lucide-react"
+import { CheckCircle, Users, Calendar, BarChart3, Shield, ArrowRight, Target, Clock } from "lucide-react"
 
 export default function HomePage() {
   const { isAuthenticated, isLoading } = useAuthStore()
@@ -43,15 +42,15 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Target className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-foreground">
               ProjectHub
             </span>
           </div>
@@ -70,14 +69,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="max-w-4xl mx-auto">
-          <Badge variant="secondary" className="mb-6">
-            <Zap className="w-4 h-4 mr-2" />
-            Nouvelle génération de gestion de projet
-          </Badge>
-
           <h1 className="text-4xl md:text-6xl font-bold mb-6 text-balance">
             Gérez vos projets avec{" "}
-            <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            <span className="text-primary">
               simplicité et efficacité
             </span>
           </h1>
@@ -187,7 +181,7 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20">
-        <Card className="bg-gradient-to-r from-primary/5 via-secondary/5 to-accent/5 border-2">
+        <Card className="bg-primary/5 border-2">
           <CardContent className="p-12 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Prêt à transformer votre gestion de projet ?</h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -213,7 +207,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="w-6 h-6 bg-gradient-to-br from-primary to-secondary rounded-md flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
                 <Target className="w-4 h-4 text-white" />
               </div>
               <span className="font-semibold">ProjectHub</span>

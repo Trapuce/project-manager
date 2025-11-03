@@ -173,12 +173,6 @@ export function SignupForm() {
           )}
         />
 
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Rôle par défaut :</strong> MEMBER (non modifiable)
-          </p>
-        </div>
-
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Créer le compte
